@@ -1,4 +1,6 @@
 ﻿# NavKalpana-RICR-NK-0022
- ok
+feat: add user login functionality with JWT authentication
+fix: resolve navbar responsive issue on mobile devices
+
 
 
