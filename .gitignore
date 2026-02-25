@@ -1,3 +1,4 @@
+
 ﻿# dependencies / build
 node_modules
 .next
@@ -15,3 +16,11 @@ yarn-error.log*
 # backend ignores
 backend/node_modules
 backend/.env
+
+﻿node_modules
+.env
+.env.local
+.next
+dist
+coverage
+.DS_Store
