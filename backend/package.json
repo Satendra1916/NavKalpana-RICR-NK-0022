@@ -1,0 +1,30 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mammoth": "^1.11.0",
+    "multer": "^2.0.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^5.4.624"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
