@@ -2,5 +2,5 @@
 feat: add user login functionality with JWT authentication
 fix: resolve navbar responsive issue on mobile devices
 
-
-
+ 
+chore: initial project setup with Next.js and Tailwind CSS
