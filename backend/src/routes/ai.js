@@ -4,6 +4,12 @@ const router = express.Router();
 const multer = require("multer");
 const mammoth = require("mammoth");
 
+// ---------- Groq (OpenAI-compatible) ----------
+const OpenAI = require("openai");
+const openai = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -38,13 +44,43 @@ async function getPdfJs() {
   );
 }
 
-// ================= Resume Improve (mock) =================
-router.post("/resume", (req, res) => {
-  res.json({
-    improved: "AI improved resume content will appear here (mock).",
-  });
+// ================= AI TEST (route check) =================
+// ================= AI TEST (REAL) =================
+router.get("/ai-test", async (req, res) => {
+  try {
+    const response = await openai.responses.create({
+      model: "llama-3.1-8b-instant" ,
+      input: "Reply with just: AI OK",
+    });
+
+    res.json({ ok: true, text: response.output_text });
+  } catch (e) {
+    console.error("AI TEST ERROR:", e);
+    res.status(500).json({ ok: false, error: String(e?.message || e) });
+  }
 });
 
+// ================= Resume Improve (REAL AI - Groq) =================
+router.post("/resume", async (req, res) => {
+  try {
+    const { role = "Software Developer", resumeText = "" } = req.body || {};
+    if (!resumeText.trim()) {
+      return res.status(400).json({ error: "resumeText is required" });
+    }
+
+    const response = await openai.responses.create({
+      model: "llama-3.1-8b-instant",
+      instructions:
+        "You are an expert resume writer. Improve the resume for the target role. ATS-friendly, action verbs, concise bullet points, quantify impact when possible. Return only improved resume text.",
+      input: `Target role: ${role}\n\nResume:\n${resumeText}`,
+    });
+
+    return res.json({ improved: response.output_text });
+  } catch (e) {
+    console.error("RESUME AI ERROR:", e);
+    return res.status(500).json({ error: "AI failed", detail: String(e?.message || e) });
+  }
+});
 // ================= Resume Extract (REAL) =================
 router.post("/resume/extract", upload.single("file"), async (req, res) => {
   try {
@@ -100,100 +136,100 @@ router.post("/resume/extract", upload.single("file"), async (req, res) => {
   }
 });
 
-// ================= Interview mock =================
-router.post("/interview", (req, res) => {
-  res.json({
-    reply: "AI interview response (mock).",
-  });
+// ================= Interview (REAL AI - Groq) =================
+router.post("/interview", async (req, res) => {
+  try {
+    const { role = "Software Developer", message = "", history = [] } = req.body || {};
+    if (!message.trim()) {
+      return res.status(400).json({ error: "message is required" });
+    }
+
+    const historyText = Array.isArray(history)
+      ? history
+          .slice(-10)
+          .map((h) => `${(h.role || "user").toUpperCase()}: ${h.text || ""}`)
+          .join("\n")
+      : "";
+
+    const response = await openai.responses.create({
+      model: "llama-3.1-8b-instant",
+      instructions:
+        "You are a strict but friendly mock interviewer. Ask one question at a time. After each user answer, give short feedback and then ask the next question.",
+      input: `Role: ${role}\n\nConversation:\n${historyText}\n\nUSER: ${message}`,
+    });
+
+    return res.json({ reply: response.output_text });
+  } catch (e) {
+    console.error("INTERVIEW AI ERROR:", e);
+    return res.status(500).json({ error: "AI failed", detail: String(e?.message || e) });
+  }
 });
 
-// ================= Career Path mock =================
+  // ================= Career Path (REAL AI - Groq) =================
 router.post("/career", async (req, res) => {
-  const profile = req.body?.profile || {};
-  const skills = profile.skills || ["Java", "JavaScript", "SQL", "Web Basics"];
+  try {
+    const profile = req.body?.profile || {};
+    const raw = profile.raw || "";
+    const skills = Array.isArray(profile.skills) ? profile.skills : [];
 
-  const result = {
-    recommendedRoles: [
-      {
-        name: "Backend Developer (Java / Spring Boot)",
-        description: "Build APIs, auth, databases, scalable backend services.",
-        whyFits: "You already know Java, SQL, and are building real web app flows.",
-        fitScore: 86,
-      },
-      {
-        name: "Full-Stack Developer (Next.js + Node.js)",
-        description: "Build complete apps: UI + APIs + database + deployment.",
-        whyFits: "You’re already using Next.js and Node/Express in your project.",
-        fitScore: 82,
-      },
-      {
-        name: "Software Engineer (DSA + Projects)",
-        description: "General SDE track: strong CS + DSA + projects.",
-        whyFits: "You’re learning DSA and doing projects.",
-        fitScore: 78,
-      },
-    ],
+    const prompt = `
+You are an AI career coach. Given a user profile, generate a personalized career plan.
+Return STRICT JSON only (no markdown, no extra text) with this schema:
 
-    skillGapAnalysis: {
-      alreadyHas: [...skills, "Basic Auth flow understanding", "Basic REST concepts"],
-      missingByRole: {
-        "Backend Developer (Java / Spring Boot)": [
-          "Spring Boot deep (MVC, Security, JPA/Hibernate)",
-          "API design + validation",
-          "Caching basics",
-          "Deployment basics",
-        ],
-        "Full-Stack Developer (Next.js + Node.js)": [
-          "State management patterns",
-          "Database modeling",
-          "Deployment + env management",
-        ],
-        "Software Engineer (DSA + Projects)": [
-          "150–300 DSA questions practice",
-          "OOP + SOLID",
-          "System Design basics",
-          "OS / CN revision",
-        ],
-      },
-    },
+{
+  "recommendedRoles": [
+    { "name": string, "description": string, "whyFits": string, "fitScore": number }
+  ],
+  "skillGapAnalysis": {
+    "alreadyHas": string[],
+    "missingByRole": { "<roleName>": string[] }
+  },
+  "roadmap": {
+    "3months": [{ "task": string, "weeklyHours": number }],
+    "6months": [{ "task": string, "weeklyHours": number }],
+    "12months": [{ "task": string, "weeklyHours": number }]
+  },
+  "resources": [{ "skill": string, "types": string[] }],
+  "checkpoints": string[]
+}
 
-    roadmap: {
-      "3months": [
-        { task: "DSA foundations", weeklyHours: 8 },
-        { task: "Java OOP mastery", weeklyHours: 5 },
-        { task: "Build 1 REST project", weeklyHours: 6 },
-        { task: "Git + README polish", weeklyHours: 2 },
-      ],
-      "6months": [
-        { task: "2 solid projects", weeklyHours: 8 },
-        { task: "Spring Boot + DB integration", weeklyHours: 6 },
-        { task: "Weekly job applications", weeklyHours: 3 },
-        { task: "Interview prep", weeklyHours: 4 },
-      ],
-      "12months": [
-        { task: "System design basics", weeklyHours: 5 },
-        { task: "DSA target 250+", weeklyHours: 8 },
-        { task: "Networking + referrals", weeklyHours: 3 },
-        { task: "Target companies apply cycle", weeklyHours: 3 },
-      ],
-    },
+Rules:
+- FitScore 0-100
+- Use the provided skills and raw profile text.
+- Make it DIFFERENT when inputs differ.
+- Keep it concise but useful.
+`;
 
-    resources: [
-      { skill: "DSA", types: ["coding practice platforms", "topic sheets"] },
-      { skill: "Spring Boot", types: ["official docs", "security guide"] },
-      { skill: "Full-stack", types: ["Next.js docs", "deployment guides"] },
-      { skill: "Interview", types: ["mock interview sets", "SQL question sets"] },
-    ],
+    const response = await openai.responses.create({
+      model: "llama-3.1-8b-instant",
+      input: `${prompt}\n\nUSER PROFILE:\nraw: ${raw}\nskills: ${skills.join(", ")}`,
+    });
 
-    checkpoints: [
-      "Build and deploy 2 full-stack apps",
-      "Solve 150 DSA questions",
-      "Complete 10 mock interviews",
-      "Prepare Backend + Full-stack resumes",
-    ],
-  };
+    // Try to parse strict JSON
+    const text = (response.output_text || "").trim();
 
-  return res.json(result);
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      // fallback: extract JSON block if model adds text
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start !== -1 && end !== -1) {
+        json = JSON.parse(text.slice(start, end + 1));
+      } else {
+        throw new Error("AI did not return valid JSON");
+      }
+    }
+
+    return res.json(json);
+  } catch (e) {
+    console.error("CAREER AI ERROR:", e);
+    return res.status(500).json({
+      error: "Career AI failed",
+      detail: String(e?.message || e),
+    });
+  }
 });
 
 // ================= Dashboard Analytics =================

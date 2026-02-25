@@ -21,41 +21,40 @@ export default function CareerPage() {
   const [err, setErr] = useState("");
 
   async function generate() {
-    setLoading(true);
-    setErr("");
-    setData(null);
+  setLoading(true);
+  setErr("");
+  setData(null);
 
-    try {
-      const res = await fetch(`${API}/api/ai/career`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile: {
-            raw: profileText,
-            skills: ["Java", "JavaScript", "SQL", "Next.js", "Node.js"],
-            education: "B.Tech (CSE) student",
-            projects: ["AI-CAREER-COACH", "QR Attendance"],
-            interests: ["Backend", "Full-stack"],
-          },
-        }),
-      });
+  try {
+    const res = await fetch(`${API}/api/ai/career`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profile: {
+          raw: profileText,
+          skills: profileText
+            .replace(/^Skills:\s*/i, "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          education: "B.Tech (CSE) student",
+          projects: ["AI-CAREER-COACH", "QR Attendance"],
+          interests: ["Backend", "Full-stack"],
+        },
+      }),
+    });
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.message || "Failed");
-      setData(json);
-    } catch (e: any) {
-      setErr(e?.message || "Server error");
-    } finally {
-      setLoading(false);
-    }
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.error || json?.detail || json?.message || "Failed");
+    setData(json);
+  } catch (e: any) {
+    setErr(e?.message || "Server error");
+  } finally {
+    setLoading(false);
   }
-
-  useEffect(() => {
-    generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+}
+  
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-8">
       {/* Header */}
