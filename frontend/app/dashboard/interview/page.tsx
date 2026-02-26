@@ -19,7 +19,11 @@ export default function InterviewPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text }),
+        body: JSON.stringify({
+  role: "Java Developer",
+  message: text,
+  history: messages.map((m) => ({ role: m.role, text: m.text })),
+}),
       });
       const data = await res.json();
       setMessages((m) => [...m, { role: "assistant", text: data?.reply || "No reply" }]);

@@ -14,20 +14,40 @@ export default function InterviewPage() {
     setMessages((m) => [...m, { role: "user", text }]);
     setInput("");
     setLoading(true);
-    try {
-      const res = await fetch(`${API}/api/ai/interview`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text }),
-      });
-      const data = await res.json();
-      setMessages((m) => [...m, { role: "assistant", text: data?.reply || "No reply" }]);
-    } catch {
-      setMessages((m) => [...m, { role: "assistant", text: "Backend not reachable on port 5000." }]);
-    } finally {
-      setLoading(false);
-    }
+   try {
+  const res = await fetch(`${API}/api/ai/interview`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      role: "Java Developer",
+      message: text,
+      history: messages.map((m) => ({ role: m.role, text: m.text })),
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    setMessages((m) => [
+      ...m,
+      { role: "assistant", text: data?.error || data?.detail || "AI error" },
+    ]);
+    return;
+  }
+
+  setMessages((m) => [
+    ...m,
+    { role: "assistant", text: data?.reply || "No reply" },
+  ]);
+} catch {
+  setMessages((m) => [
+    ...m,
+    { role: "assistant", text: "Backend not reachable on port 5000." },
+  ]);
+} finally {
+  setLoading(false);
+}
   }
   return (
     <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-6 shadow-2xl">

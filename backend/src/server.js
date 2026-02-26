@@ -1,10 +1,13 @@
-﻿const express = require("express");
+﻿require("dotenv").config();
+
+const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const passport = require("passport");
-require("dotenv").config();
 
 const initPassport = require("./config/passport");
+initPassport();
+
 const authRoutes = require("./routes/auth.routes");
 const resumeRoutes = require("./routes/resume.routes");
 const aiRoutes = require("./routes/ai");
