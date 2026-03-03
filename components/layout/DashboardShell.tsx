@@ -10,8 +10,13 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const [helpOpen, setHelpOpen] = useState(false);
 
-  function logout() {
-    window.location.href = `${API}/auth/logout`;
+  async function logout() {
+    try {
+      await fetch(`${API}/auth/logout`, { method: "GET" });
+      window.location.replace("/");
+    } catch (e) {
+      window.location.replace("/");
+    }
   }
 
   // ✅ smart active checker (important upgrade)

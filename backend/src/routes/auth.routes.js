@@ -18,17 +18,26 @@ router.get("/me", (req, res) => {
   if (req.isAuthenticated && req.isAuthenticated()) return res.json({ user: req.user });
   return res.json({ user: null });
 });
-router.get("/logout", (req, res, next) => {
+router.get("/logout", (req, res) => {
   req.logout((err) => {
-    if (err) return next(err);
+    // Even if logout throws error, we still redirect to login
+    try {
+      res.clearCookie("connect.sid");
+    } catch {}
+
+    const FRONTEND = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    if (err) {
+      return res.redirect(`${FRONTEND}/login`);
+    }
+
+    // destroy session if exists
     if (req.session) {
       req.session.destroy(() => {
-        res.clearCookie("connect.sid");
-        return res.redirect(`${FRONTEND_URL}/`);
+        return res.redirect(`${FRONTEND}/login`);
       });
     } else {
-      res.clearCookie("connect.sid");
-      return res.redirect(`${FRONTEND_URL}/`);
+      return res.redirect(`${FRONTEND}/login`);
     }
   });
 });
