@@ -8,10 +8,16 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 type AnalyzeResult = {
   fitScore: number;
+  atsScore: number;
   strengths: string[];
   weaknesses: string[];
   missingKeywords: string[];
+  grammarIssues: string[];
   improvements: string[];
+  rewriteSuggestions: {
+    summary: string;
+    projectBullets: string[];
+  };
 };
 
 const ROLE_OPTIONS = [
@@ -183,37 +189,50 @@ export default function ResumePage() {
     setActiveTab("analyze");
 
     try {
-      const res = await fetch(`${API}/api/ai/resume/analyze`, {
+      const res = await fetch(`${API}/api/resume/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ role, resumeText: text }),
       });
 
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || "Analyze failed");
-      }
-
       const data = await res.json();
 
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || "Analyze failed");
+      }
+
+      const r = data?.result || {};
+
       const payload: AnalyzeResult = {
-        fitScore: clamp(Number(data?.fitScore ?? 0)),
-        strengths: Array.isArray(data?.strengths) ? data.strengths : [],
-        weaknesses: Array.isArray(data?.weaknesses) ? data.weaknesses : [],
-        missingKeywords: Array.isArray(data?.missingKeywords) ? data.missingKeywords : [],
-        improvements: Array.isArray(data?.improvements) ? data.improvements : [],
+        fitScore: clamp(Number(r?.fitScore ?? 0)),
+        atsScore: clamp(Number(r?.atsScore ?? 0)),
+        strengths: Array.isArray(r?.strengths) ? r.strengths : [],
+        weaknesses: Array.isArray(r?.weaknesses) ? r.weaknesses : [],
+        missingKeywords: Array.isArray(r?.missingKeywords) ? r.missingKeywords : [],
+        grammarIssues: Array.isArray(r?.grammarIssues) ? r.grammarIssues : [],
+        improvements: Array.isArray(r?.improvements) ? r.improvements : [],
+        rewriteSuggestions: {
+          summary: String(r?.rewriteSuggestions?.summary || "").trim(),
+          projectBullets: Array.isArray(r?.rewriteSuggestions?.projectBullets)
+            ? r.rewriteSuggestions.projectBullets
+            : [],
+        },
       };
 
-      payload.strengths = payload.strengths.filter(Boolean).slice(0, 8);
-      payload.weaknesses = payload.weaknesses.filter(Boolean).slice(0, 8);
-      payload.improvements = payload.improvements.filter(Boolean).slice(0, 10);
-      payload.missingKeywords = payload.missingKeywords.filter(Boolean).slice(0, 18);
+      payload.strengths = payload.strengths.filter(Boolean).slice(0, 10);
+      payload.weaknesses = payload.weaknesses.filter(Boolean).slice(0, 10);
+      payload.improvements = payload.improvements.filter(Boolean).slice(0, 12);
+      payload.grammarIssues = payload.grammarIssues.filter(Boolean).slice(0, 10);
+      payload.missingKeywords = payload.missingKeywords.filter(Boolean).slice(0, 24);
+      payload.rewriteSuggestions.projectBullets = payload.rewriteSuggestions.projectBullets
+        .filter(Boolean)
+        .slice(0, 6);
 
       setAnalyze(payload);
     } catch (e: any) {
       console.error(e);
-      alert("Analyze failed (API). Check backend running + cookies.");
+      alert(e?.message || "Analyze failed. Check backend running + cookies.");
     } finally {
       setBusyAnalyze(false);
     }
@@ -273,11 +292,6 @@ export default function ResumePage() {
     }
   }
 
-  /**
-   * ✅ Perfect PDF Export
-   * Key fix: export the HIDDEN A4 container (printRef), not the narrow right column.
-   * Also: slice canvas per page => no blank pages + no negative-position trick.
-   */
   async function handleDownloadPDF() {
     try {
       const el = printRef.current;
@@ -288,7 +302,6 @@ export default function ResumePage() {
 
       setBusyDownload(true);
 
-      // Make sure fonts/layout settle
       await new Promise((r) => requestAnimationFrame(() => r(true)));
 
       const canvas = await html2canvas(el, {
@@ -300,10 +313,9 @@ export default function ResumePage() {
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidthMM = pdf.internal.pageSize.getWidth();   // 210
-      const pageHeightMM = pdf.internal.pageSize.getHeight(); // 297
+      const pageWidthMM = pdf.internal.pageSize.getWidth();
+      const pageHeightMM = pdf.internal.pageSize.getHeight();
 
-      // Convert canvas px -> mm based on width fitting
       const pxPerMM = canvas.width / pageWidthMM;
       const pageHeightPx = Math.floor(pageHeightMM * pxPerMM);
 
@@ -320,7 +332,6 @@ export default function ResumePage() {
         const ctx = pageCanvas.getContext("2d");
         if (!ctx) throw new Error("Canvas context not available");
 
-        // Draw slice
         ctx.drawImage(canvas, 0, y, canvas.width, chunkHeight, 0, 0, canvas.width, chunkHeight);
 
         const imgData = pageCanvas.toDataURL("image/png", 1.0);
@@ -354,7 +365,6 @@ export default function ResumePage() {
 
   return (
     <div className="relative">
-      {/* Background */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.22]"
         style={{
@@ -364,7 +374,6 @@ export default function ResumePage() {
       />
 
       <div className="relative space-y-6">
-        {/* Header */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
@@ -400,7 +409,6 @@ export default function ResumePage() {
               {busyDownload ? "Generating..." : "Download PDF"}
             </button>
 
-            {/* Fit ring */}
             <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 flex items-center gap-3">
               <div className="relative h-12 w-12 grid place-items-center">
                 <div
@@ -415,17 +423,13 @@ export default function ResumePage() {
               </div>
               <div>
                 <div className="text-xs text-slate-400">Fit score</div>
-                <div className="text-sm font-semibold text-slate-100">
-                  {analyze ? "Based on analyze" : "Run analyze"}
-                </div>
+                <div className="text-sm font-semibold text-slate-100">{analyze ? "Based on analyze" : "Run analyze"}</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Layout */}
         <div className="grid grid-cols-12 gap-6">
-          {/* Left: Builder */}
           <div className="col-span-12 lg:col-span-5 rounded-3xl border border-white/10 bg-slate-950/55 shadow-2xl overflow-hidden">
             <div className="p-5 border-b border-white/10">
               <div className="flex items-center justify-between">
@@ -515,7 +519,6 @@ export default function ResumePage() {
             </div>
           </div>
 
-          {/* Middle: AI panel */}
           <div className="col-span-12 lg:col-span-4 rounded-3xl border border-white/10 bg-slate-950/55 shadow-2xl overflow-hidden">
             <div className="p-5 border-b border-white/10 flex items-center justify-between">
               <div className="text-white font-bold">AI Output</div>
@@ -535,13 +538,13 @@ export default function ResumePage() {
                   {!analyze ? (
                     <EmptyState
                       title="No analysis yet"
-                      subtitle="Click Analyze to get strengths, weaknesses, missing keywords, improvements."
+                      subtitle="Click Analyze to get ATS score, strengths, weaknesses, missing keywords, grammar issues, improvements."
                     />
                   ) : (
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <MiniCard title="Fit score" value={`${clamp(analyze.fitScore)}%`} />
-                        <MiniCard title="Missing keywords" value={`${analyze.missingKeywords.length}`} />
+                        <MiniCard title="ATS score" value={`${clamp(analyze.atsScore)}%`} />
                       </div>
 
                       <div className="grid grid-cols-1 gap-4">
@@ -563,6 +566,35 @@ export default function ResumePage() {
                           items={analyze.improvements}
                           emptyText="No improvements detected."
                         />
+                        <ListCard
+                          title="Grammar / Clarity Issues"
+                          tone="neutral"
+                          items={analyze.grammarIssues}
+                          emptyText="No major grammar issues found."
+                        />
+                        <div className="rounded-3xl border border-white/10 bg-slate-900/30 p-4">
+                          <div className="text-sm font-bold text-white">Rewrite Suggestions</div>
+                          <div className="text-xs text-slate-400 mt-1">Improved summary + project bullets</div>
+
+                          <div className="mt-3 text-xs text-slate-300">Summary</div>
+                          <div className="mt-1 rounded-2xl border border-white/10 bg-slate-950/40 p-3 text-sm text-slate-100 whitespace-pre-wrap">
+                            {analyze.rewriteSuggestions?.summary || "—"}
+                          </div>
+
+                          <div className="mt-4 text-xs text-slate-300">Project bullets</div>
+                          <ul className="mt-2 space-y-2 text-sm text-slate-100">
+                            {(analyze.rewriteSuggestions?.projectBullets || []).map((b, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="mt-[6px] h-1.5 w-1.5 rounded-full bg-violet-400 shrink-0" />
+                                <span className="text-slate-200">{String(b)}</span>
+                              </li>
+                            ))}
+                            {!analyze.rewriteSuggestions?.projectBullets?.length ? (
+                              <li className="text-sm text-slate-300">—</li>
+                            ) : null}
+                          </ul>
+                        </div>
+
                         <KeywordCloud items={analyze.missingKeywords} />
                       </div>
                     </>
@@ -587,7 +619,6 @@ export default function ResumePage() {
             </div>
           </div>
 
-          {/* Right: On-screen preview (looks good, but NOT used for export) */}
           <div className="col-span-12 lg:col-span-3">
             <div className="rounded-3xl border border-white/10 bg-slate-950/55 shadow-2xl overflow-hidden">
               <div className="p-5 border-b border-white/10">
@@ -623,18 +654,15 @@ export default function ResumePage() {
           </div>
         </div>
 
-        <div className="text-xs text-slate-400">
-          ✅ Best flow: Upload → Extract → Analyze → Fix gaps → Rewrite → Download PDF
-        </div>
+        <div className="text-xs text-slate-400">✅ Best flow: Upload → Extract → Analyze → Fix gaps → Rewrite → Download PDF</div>
 
-        {/* Hidden A4 print layout (THIS is what we export) */}
         <div style={{ position: "fixed", left: "-10000px", top: 0, width: 794 }}>
           <div
             ref={printRef}
             id="resume-print-area"
             style={{
-              width: 794,                 // ~A4 at 96dpi
-              minHeight: 1123,            // ~A4 height at 96dpi
+              width: 794,
+              minHeight: 1123,
               background: "#ffffff",
               color: "#111827",
               padding: 40,
@@ -660,8 +688,6 @@ export default function ResumePage() {
   );
 }
 
-/* ------------------ Resume Paper (shared for preview + print) ------------------ */
-
 function ResumePaper(props: {
   name: string;
   role: string;
@@ -674,18 +700,7 @@ function ResumePaper(props: {
   education: string;
   compact?: boolean;
 }) {
-  const {
-    name,
-    role,
-    email,
-    phone,
-    summary,
-    skills,
-    projects,
-    experience,
-    education,
-    compact,
-  } = props;
+  const { name, role, email, phone, summary, skills, projects, experience, education, compact } = props;
 
   const H1 = compact ? 20 : 28;
   const H2 = compact ? 12 : 14;
@@ -717,15 +732,10 @@ function ResumePaper(props: {
 
   return (
     <div>
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
         <div>
-          <div style={{ fontSize: H1, fontWeight: 900, letterSpacing: "-0.02em" }}>
-            {name || "Your Name"}
-          </div>
-          <div style={{ marginTop: 4, fontSize: H2, fontWeight: 800, color: "#374151" }}>
-            {role}
-          </div>
+          <div style={{ fontSize: H1, fontWeight: 900, letterSpacing: "-0.02em" }}>{name || "Your Name"}</div>
+          <div style={{ marginTop: 4, fontSize: H2, fontWeight: 800, color: "#374151" }}>{role}</div>
           <div
             style={{
               marginTop: 10,
@@ -832,17 +842,13 @@ function PdfSection({ title, children }: { title: string; children: React.ReactN
   return (
     <div style={{ marginTop: 18 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", color: "#374151" }}>
-          {title}
-        </div>
+        <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", color: "#374151" }}>{title}</div>
         <div style={{ height: 1, flex: 1, background: "#E5E7EB" }} />
       </div>
       <div style={{ marginTop: 10 }}>{children}</div>
     </div>
   );
 }
-
-/* ------------------ UI Components ------------------ */
 
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
@@ -889,9 +895,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
       onClick={onClick}
       className={cx(
         "rounded-xl px-3 py-1.5 text-xs font-semibold border",
-        active
-          ? "border-violet-500/40 bg-violet-500/20 text-white"
-          : "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
+        active ? "border-violet-500/40 bg-violet-500/20 text-white" : "border-white/10 bg-white/5 text-slate-200 hover:bg-white/10"
       )}
     >
       {children}

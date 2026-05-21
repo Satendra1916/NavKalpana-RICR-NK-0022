@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,36 +14,19 @@ export default function SidebarNav() {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: <HomeIcon />,
-    },
-    {
-      label: "Resume Builder",
-      href: "/dashboard/resume",
-      icon: <DocIcon />,
-    },
-    {
-      label: "Interview Prep",
-      href: "/dashboard/interview",
-      icon: <MicIcon />,
-    },
-    {
-      label: "Sessions",
-      href: "/dashboard/sessions",
-      icon: <CalendarIcon />,
-    },
-    {
-      label: "Career Path",
-      href: "/dashboard/career",
-      icon: <CompassIcon />,
-    },
+    { label: "Dashboard", href: "/dashboard", icon: <HomeIcon /> },
+    { label: "Resume Builder", href: "/dashboard/resume", icon: <DocIcon /> },
+    { label: "Interview Prep", href: "/dashboard/interview", icon: <MicIcon /> },
+
+    // ✅ Quiz page separate रहेगा
+    { label: "Quiz", href: "/dashboard/quiz", icon: <QuizIcon /> },
+
+    { label: "Sessions", href: "/dashboard/sessions", icon: <CalendarIcon /> },
+    { label: "Career Path", href: "/dashboard/career", icon: <CompassIcon /> },
   ];
 
   return (
-    <aside className="h-full w-full rounded-3xl border border-slate-700/40 bg-slate-900/30 p-4 shadow-lg backdrop-blur">
-      {/* Header */}
+    <aside className="h-full w-full rounded-3xl border border-white/10 bg-slate-900/30 p-4 shadow-lg backdrop-blur">
       <div className="mb-6 flex items-center gap-3 px-2">
         <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500" />
         <div>
@@ -71,24 +55,24 @@ export default function SidebarNav() {
                   "border border-transparent",
                   active
                     ? "bg-indigo-500/20 border-indigo-400/40 shadow-[0_0_0_1px_rgba(99,102,241,0.25)]"
-                    : "hover:bg-slate-200/5 hover:border-slate-600/40",
+                    : "hover:bg-white/5 hover:border-white/10",
                 ].join(" ")}
               >
                 <div
                   className={[
-                    "grid h-9 w-9 place-items-center rounded-xl transition",
+                    "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition",
                     active
                       ? "bg-indigo-500 text-white"
-                      : "bg-slate-200/10 text-slate-200 group-hover:bg-slate-200/15",
+                      : "bg-white/10 text-slate-200 group-hover:bg-white/15",
                   ].join(" ")}
                 >
                   {item.icon}
                 </div>
 
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <div
                     className={[
-                      "text-sm font-semibold transition",
+                      "truncate text-sm font-semibold transition",
                       active ? "text-white" : "text-slate-200",
                     ].join(" ")}
                   >
@@ -101,7 +85,7 @@ export default function SidebarNav() {
 
                 <div
                   className={[
-                    "h-2 w-2 rounded-full transition",
+                    "h-2 w-2 shrink-0 rounded-full transition",
                     active ? "bg-indigo-400" : "bg-slate-600 group-hover:bg-slate-400",
                   ].join(" ")}
                 />
@@ -111,15 +95,12 @@ export default function SidebarNav() {
         </nav>
       </div>
 
-      {/* Bottom Goal Card */}
-      <div className="mt-6 rounded-3xl border border-slate-700/40 bg-slate-950/40 p-4">
-        <div className="text-xs font-bold tracking-widest text-slate-400">
-          YOUR GOAL
-        </div>
+      <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950/40 p-4">
+        <div className="text-xs font-bold tracking-widest text-slate-400">YOUR GOAL</div>
         <div className="mt-2 text-sm font-semibold text-white">
           Complete profile + 2 mock interviews this week.
         </div>
-        <button className="mt-3 w-full rounded-2xl bg-slate-200/10 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-200/15">
+        <button className="mt-3 w-full rounded-2xl bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15">
           View plan →
         </button>
       </div>
@@ -127,7 +108,7 @@ export default function SidebarNav() {
   );
 }
 
-/* ---------- Minimal Icons (no extra library needed) ---------- */
+/* ---------- Minimal Icons ---------- */
 
 function HomeIcon() {
   return (
@@ -149,11 +130,7 @@ function DocIcon() {
         stroke="currentColor"
         strokeWidth="2"
       />
-      <path
-        d="M14 3v4a1 1 0 0 0 1 1h4"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <path d="M14 3v4a1 1 0 0 0 1 1h4" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }
@@ -165,12 +142,27 @@ function MicIcon() {
         stroke="currentColor"
         strokeWidth="2"
       />
+      <path d="M19 11a7 7 0 0 1-14 0" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 18v3" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+function QuizIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <path
-        d="M19 11a7 7 0 0 1-14 0"
+        d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
         stroke="currentColor"
         strokeWidth="2"
       />
-      <path d="M12 18v3" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="M16.5 16.5l1 1 2-2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -188,11 +180,7 @@ function CalendarIcon() {
 function CompassIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" stroke="currentColor" strokeWidth="2" />
       <path
         d="M14.5 9.5l-2 5-5 2 2-5 5-2z"
         stroke="currentColor"

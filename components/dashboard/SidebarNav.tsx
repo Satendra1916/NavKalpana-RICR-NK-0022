@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,31 +14,15 @@ export default function SidebarNav() {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: <HomeIcon />,
-    },
-    {
-      label: "Resume Builder",
-      href: "/dashboard/resume",
-      icon: <DocIcon />,
-    },
-    {
-      label: "Interview Prep",
-      href: "/dashboard/interview",
-      icon: <MicIcon />,
-    },
-    {
-      label: "Sessions",
-      href: "/dashboard/sessions",
-      icon: <CalendarIcon />,
-    },
-    {
-      label: "Career Path",
-      href: "/dashboard/career",
-      icon: <CompassIcon />,
-    },
+    { label: "Dashboard", href: "/dashboard", icon: <HomeIcon /> },
+    { label: "Resume Builder", href: "/dashboard/resume", icon: <DocIcon /> },
+    { label: "Interview Prep", href: "/dashboard/interview", icon: <MicIcon /> },
+
+    // ✅ NEW: Quiz
+    { label: "Quiz", href: "/dashboard/quiz", icon: <QuizIcon /> },
+
+    { label: "Sessions", href: "/dashboard/sessions", icon: <CalendarIcon /> },
+    { label: "Career Path", href: "/dashboard/career", icon: <CompassIcon /> },
   ];
 
   return (
@@ -127,7 +112,7 @@ export default function SidebarNav() {
   );
 }
 
-/* ---------- Minimal Icons (no extra library needed) ---------- */
+/* ---------- Minimal Icons ---------- */
 
 function HomeIcon() {
   return (
@@ -141,6 +126,7 @@ function HomeIcon() {
     </svg>
   );
 }
+
 function DocIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -157,6 +143,7 @@ function DocIcon() {
     </svg>
   );
 }
+
 function MicIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -165,15 +152,37 @@ function MicIcon() {
         stroke="currentColor"
         strokeWidth="2"
       />
-      <path
-        d="M19 11a7 7 0 0 1-14 0"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <path d="M19 11a7 7 0 0 1-14 0" stroke="currentColor" strokeWidth="2" />
       <path d="M12 18v3" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }
+
+function QuizIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M8 8h8M8 12h8M8 16h5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16.5 16.5l1 1 2-2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function CalendarIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -185,6 +194,7 @@ function CalendarIcon() {
     </svg>
   );
 }
+
 function CompassIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
