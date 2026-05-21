@@ -1,26 +1,39 @@
-
-﻿# dependencies / build
+# =========================
+# Dependencies / build
+# =========================
 node_modules
+backend/node_modules
 .next
 dist
 coverage
-# env files (never commit)
+
+# =========================
+# Environment files (NEVER COMMIT)
+# =========================
 .env
 .env.local
 .env.*.local
-# logs / misc
+backend/.env
+frontend/.env.local
+
+# =========================
+# Logs
+# =========================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
-# backend ignores
-backend/node_modules
-backend/.env
 
-﻿node_modules
-.env
-.env.local
-.next
-dist
-coverage
+# =========================
+# OS / misc
+# =========================
 .DS_Store
+
+# =========================
+
+# temp/test artifacts
+cookies.txt
+backend/*.json
+backend/cookies.txt
+*.bak
+*.corrupt.bak
+*.backup.*

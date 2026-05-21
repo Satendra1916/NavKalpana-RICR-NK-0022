@@ -2,52 +2,53 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-export default function SignupPage() {
+
+export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/dashboard";
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
+  const [email, setEmail] = useState("ranjeet@test.com");
+  const [password, setPassword] = useState("Test@1234");
   const [loading, setLoading] = useState(false);
-  const [serverMsg, setServerMsg] = useState<string>("");
+  const [msg, setMsg] = useState("");
 
-  async function handleSignup() {
-    setServerMsg("");
-
-    if (!name.trim()) return setServerMsg("Name required");
-    if (!email.trim()) return setServerMsg("Email required");
-    if (!password.trim()) return setServerMsg("Password required");
-    if (password.length < 6) return setServerMsg("Password must be 6+ characters");
+  async function handleLogin() {
+    setMsg("");
+    if (!email.trim()) return setMsg("Email required");
+    if (!password.trim()) return setMsg("Password required");
 
     setLoading(true);
     try {
-      const res = await fetch(`${API}/auth/local/signup`, {
+      const res = await fetch(`/auth/local/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setServerMsg(data?.error || "Signup failed");
+        setMsg(data?.error || "Login failed");
         return;
       }
 
-      setServerMsg(data?.message || "Signup success. OTP sent to your email.");
-
-      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      // ✅ logged in
+      router.push(next);
     } catch (e) {
-      setServerMsg("Network error. Is backend running on :5000?");
+      setMsg("Network error. Is backend running on :5000?");
     } finally {
       setLoading(false);
     }
+  }
+
+  function googleLogin() {
+    // ✅ backend google oauth route
+    window.location.href = `/auth/google`;
   }
 
   return (
@@ -59,27 +60,31 @@ export default function SignupPage() {
       <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-slate-900/40 shadow-[0_20px_80px_rgba(0,0,0,0.55)] backdrop-blur">
         <div className="px-8 pt-8 pb-6">
           <h1 className="text-center text-2xl font-semibold text-white">
-            Create your <span className="font-bold">AI-CAREER-COACH</span> account
+            Sign in to <span className="font-bold">AI-CAREER-COACH</span>
           </h1>
           <p className="mt-2 text-center text-sm text-slate-400">
-            Sign up with email & password. OTP will be sent to your email.
+            Continue with Google or use email + password.
           </p>
 
           <div className="mt-6 space-y-4">
-            <div>
-              <label className="text-sm font-medium text-slate-200">Full name</label>
-              <input
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-                className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:ring-4 focus:ring-violet-500/20"
-              />
+            <button
+              type="button"
+              onClick={googleLogin}
+              className="w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm font-semibold text-slate-100 hover:bg-slate-950/60"
+            >
+              Continue with Google
+            </button>
+
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-xs text-slate-500">or</span>
+              <div className="h-px flex-1 bg-white/10" />
             </div>
 
             <div>
               <label className="text-sm font-medium text-slate-200">Email</label>
               <input
+                suppressHydrationWarning
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -92,28 +97,28 @@ export default function SignupPage() {
             <div>
               <label className="text-sm font-medium text-slate-200">Password</label>
               <input
+                suppressHydrationWarning
                 type="password"
-                autoComplete="new-password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
+                placeholder="Enter your password"
                 className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:ring-4 focus:ring-violet-500/20"
               />
-              <p className="mt-2 text-xs text-slate-500">Minimum 6 characters.</p>
             </div>
 
             <button
               type="button"
-              onClick={handleSignup}
+              onClick={handleLogin}
               disabled={loading}
               className="w-full rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/35 active:scale-[0.99] transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
 
-            {serverMsg ? (
+            {msg ? (
               <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-slate-200">
-                {serverMsg}
+                {msg}
               </div>
             ) : null}
           </div>
@@ -121,9 +126,9 @@ export default function SignupPage() {
 
         <div className="border-t border-white/10 px-8 py-5">
           <p className="text-center text-sm text-slate-400">
-            Already have an account?{" "}
-            <Link href="/login" className="font-semibold text-violet-300 hover:text-violet-200">
-              Sign in
+            Don’t have an account?{" "}
+            <Link href="/signup" className="font-semibold text-violet-300 hover:text-violet-200">
+              Create one
             </Link>
           </p>
         </div>
